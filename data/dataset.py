@@ -74,7 +74,7 @@ class InpaintDataset(data.Dataset):
             h, w = self.image_size
             mask = bbox2mask(self.image_size, (h//4, w//4, h//2, w//2))
         elif self.mask_mode == 'irregular':
-            mask = get_irregular_mask(self.image_size)
+            mask = get_irregular_mask(self.image_size, area_ratio_range=(0.05, 0.3), brush_width=(5, 10))
         elif self.mask_mode == 'free_form':
             mask = brush_stroke_mask(self.image_size)
         elif self.mask_mode == 'hybrid':
