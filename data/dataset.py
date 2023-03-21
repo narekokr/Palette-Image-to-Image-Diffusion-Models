@@ -214,10 +214,10 @@ class CustomInpaintDataset(data.Dataset):
         img_path, mask_path = self.imgs[index]
         img = self.tfs(self.loader(img_path))
         mask = self.mask_tfs(self.loader(mask_path))
-        cond_image = img*mask + (1. - mask)*torch.randn_like(img)
-        # cond_image = img*(1. - mask) + mask*torch.randn_like(img)
-        # mask_img = img*(1. - mask) + mask
-        mask_img = img*mask + (1 - mask)
+        # cond_image = img*mask + (1. - mask)*torch.randn_like(img)
+        cond_image = img*(1. - mask) + mask*torch.randn_like(img)
+        mask_img = img*(1. - mask) + mask
+        # mask_img = img*mask + (1 - mask)
 
         ret['gt_image'] = img
         ret['cond_image'] = cond_image
