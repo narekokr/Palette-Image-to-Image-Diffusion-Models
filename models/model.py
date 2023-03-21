@@ -199,6 +199,47 @@ class Palette(BaseModel):
         for key, value in test_log.items():
             self.logger.info('{:5s}: {}\t'.format(str(key), value))
 
+    def inference(self):
+        self.netG.eval()
+        self.test_metrics.reset()
+        with torch.no_grad():
+            for phase_data in tqdm.tqdm(self.phase_loader):
+                self.set_input(phase_data)
+                if self.opt['distributed']:
+                    if self.task in ['inpainting', 'uncropping']:
+                        self.output, self.visuals = self.netG.module.restoration(self.cond_image, y_t=self.cond_image,
+                                                                                 y_0=self.gt_image, mask=self.mask,
+                                                                                 sample_num=self.sample_num)
+                    else:
+                        self.output, self.visuals = self.netG.module.restoration(self.cond_image,
+                                                                                 sample_num=self.sample_num)
+                else:
+                    if self.task in ['inpainting', 'uncropping']:
+                        self.output, self.visuals = self.netG.restoration(self.cond_image, y_t=self.cond_image,
+                                                                          y_0=self.gt_image, mask=self.mask,
+                                                                          sample_num=self.sample_num)
+                    else:
+                        self.output, self.visuals = self.netG.restoration(self.cond_image, sample_num=self.sample_num)
+
+                self.iter += self.batch_size
+                self.writer.set_iter(self.epoch, self.iter, phase='test')
+                for met in self.metrics:
+                    key = met.__name__
+                    value = met(self.gt_image, self.output)
+                    self.test_metrics.update(key, value)
+                    self.writer.add_scalar(key, value)
+                for key, value in self.get_current_visuals(phase='test').items():
+                    self.writer.add_images(key, value)
+                self.writer.save_images(self.save_current_results())
+
+        test_log = self.test_metrics.result()
+        ''' save logged informations into log dict '''
+        test_log.update({'epoch': self.epoch, 'iters': self.iter})
+
+        ''' print logged informations to the screen and tensorboard '''
+        for key, value in test_log.items():
+            self.logger.info('{:5s}: {}\t'.format(str(key), value))
+
     def load_networks(self):
         """ save pretrained model and training state, which only do on GPU 0. """
         if self.opt['distributed']:

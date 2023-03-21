@@ -56,8 +56,10 @@ def main_worker(gpu, ngpus_per_node, opt):
     try:
         if opt['phase'] == 'train':
             model.train()
-        else:
+        elif opt['phase'] == 'test':
             model.test()
+        else:
+            model.inference()
     finally:
         phase_writer.close()
         
@@ -65,7 +67,7 @@ def main_worker(gpu, ngpus_per_node, opt):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', type=str, default='config/colorization_mirflickr25k.json', help='JSON file for configuration')
-    parser.add_argument('-p', '--phase', type=str, choices=['train','test'], help='Run train or test', default='train')
+    parser.add_argument('-p', '--phase', type=str, choices=['train','test', 'inference'], help='Run train or test', default='train')
     parser.add_argument('-b', '--batch', type=int, default=None, help='Batch size in every gpu')
     parser.add_argument('-gpu', '--gpu_ids', type=str, default=None)
     parser.add_argument('-d', '--debug', action='store_true')

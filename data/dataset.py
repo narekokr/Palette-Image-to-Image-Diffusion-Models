@@ -29,6 +29,20 @@ def make_dataset(dir):
 
     return images
 
+
+def make_custom_dataset(dir, gt_dir = 'gt', mask_dir = 'masks'):
+    images = []
+    assert os.path.isdir(dir), '%s is not a valid directory' % dir
+    all_images = sorted(os.listdir(os.path.join(dir, gt_dir)))
+    masks = sorted(os.listdir(os.path.join(dir, mask_dir)))
+    for index, path in enumerate(all_images):
+        image_path = os.path.join(dir, gt_dir, path)
+        mask_path = os.path.join(dir, mask_dir, masks[index])
+        if is_image_file(image_path) and is_image_file(mask_path):
+            images.append([image_path, mask_path])
+
+    return images
+
 def pil_loader(path):
     return Image.open(path).convert('RGB')
 
@@ -173,4 +187,43 @@ class ColorizationDataset(data.Dataset):
     def __len__(self):
         return len(self.flist)
 
+
+class CustomInpaintDataset(data.Dataset):
+    def __init__(self, data_root, gt_dir, mask_dir, data_len=-1, image_size=[256, 256], loader=pil_loader):
+        imgs = make_custom_dataset(data_root, gt_dir, mask_dir)
+        if data_len > 0:
+            self.imgs = imgs[:int(data_len)]
+        else:
+            self.imgs = imgs
+        self.tfs = transforms.Compose([
+                transforms.Resize((image_size[0], image_size[1])),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5,0.5, 0.5])
+        ])
+
+        self.mask_tfs = transforms.Compose([
+            transforms.Resize((image_size[0], image_size[1])),
+            transforms.ToTensor()
+        ])
+
+        self.loader = loader
+        self.image_size = image_size
+
+    def __getitem__(self, index):
+        ret = {}
+        img_path, mask_path = self.imgs[index]
+        img = self.tfs(self.loader(img_path))
+        mask = self.mask_tfs(self.loader(mask_path))
+        cond_image = img*(1. - mask) + mask*torch.randn_like(img)
+        mask_img = img*(1. - mask) + mask
+
+        ret['gt_image'] = img
+        ret['cond_image'] = cond_image
+        ret['mask_image'] = mask_img
+        ret['mask'] = mask
+        ret['img_path'] = img_path.rsplit("/")[-1].rsplit("\\")[-1]
+        return ret
+
+    def __len__(self):
+        return len(self.imgs)
 
