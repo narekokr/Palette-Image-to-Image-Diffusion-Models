@@ -221,7 +221,7 @@ class CustomInpaintDataset(data.Dataset):
         ret['cond_image'] = cond_image
         ret['mask_image'] = mask_img
         ret['mask'] = mask
-        ret['img_path'] = img_path.rsplit("/")[-1].rsplit("\\")[-1]
+        ret['path'] = img_path.rsplit("/")[-1].rsplit("\\")[-1]
         return ret
 
     def __len__(self):
