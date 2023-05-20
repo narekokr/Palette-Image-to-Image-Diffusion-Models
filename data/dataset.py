@@ -35,6 +35,7 @@ def make_custom_dataset(dir, gt_dir = 'gt', mask_dir = 'masks'):
     assert os.path.isdir(dir), '%s is not a valid directory' % dir
     all_images = sorted(os.listdir(os.path.join(dir, gt_dir)))
     masks = sorted(os.listdir(os.path.join(dir, mask_dir)))
+    print(all_images, masks)
     for index, path in enumerate(all_images):
         image_path = os.path.join(dir, gt_dir, path)
         mask_path = os.path.join(dir, mask_dir, masks[index])
